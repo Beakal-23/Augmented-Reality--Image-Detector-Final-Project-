@@ -1,0 +1,35 @@
+services:
+  # Training service - run once to train the model
+  quickdraw-training:
+    build: .
+    container_name: quickdraw-training
+    volumes:
+      - ./saved_models:/app/saved_models
+      - ./quickdraw_npy:/app/quickdraw_npy
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python Model-Training.py
+    profiles:
+      - training  # Only runs when explicitly called
+
+  # API service - runs the FastAPI server
+  quickdraw-api:
+    build: .
+    container_name: quickdraw-api
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./saved_models:/app/saved_models
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    name: quickdraw-network

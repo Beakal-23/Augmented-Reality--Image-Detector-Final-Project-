@@ -16,12 +16,35 @@ from tensorflow.keras import layers, models
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
-#classes used: House cat, dog, car
-CLASS_NAMES = ["house", "cat", "dog", "car"]
-NUM_CLASSES = len(CLASS_NAMES)
+# Extended class list - common objects useful for VR drawing
+# Only verified available classes from Google QuickDraw dataset
+CLASS_NAMES = [
+    # Animals (7)
+    "cat", "dog", "bird", "fish", "bear", "butterfly", "spider",
+    # Buildings & Structures (6)
+    "house", "castle", "barn", "bridge", "lighthouse", "church",
+    # Transportation (5)
+    "car", "airplane", "bicycle", "truck", "train",
+    # Nature (6)
+    "tree", "flower", "sun", "moon", "cloud", "mountain",
+    # Common Objects (7)
+    "apple", "banana", "book", "chair", "table", "cup", "umbrella",
+    # People & Body (4)
+    "face", "eye", "hand", "foot",
+    # Shapes (4)
+    "circle", "triangle", "square", "star",
+    # Tools & Items (5)
+    "sword", "axe", "hammer", "key", "crown",
+    # Musical Instruments (2)
+    "guitar", "piano"
+]
 
-# Limit samples per class (dataset is huge; tune as needed)
-MAX_ITEMS_PER_CLASS = 2000   # try 2000 for faster experiments
+NUM_CLASSES = len(CLASS_NAMES)
+print(f"Training with {NUM_CLASSES} classes")
+
+# Samples per class - adjust based on training time/accuracy needs
+# 2000-5000 is good for quick experiments, 10000+ for better accuracy
+MAX_ITEMS_PER_CLASS = 5000
 
 # Where to cache the downloaded .npy files and saved model
 DATA_DIR = "quickdraw_npy"
@@ -141,8 +164,62 @@ model.compile(
     metrics=["accuracy"]
 )
 
-# Save the trained model
+# Training the model
+print("\n=== Training the Model ===")
 
+# Callbacks for better training
+early_stopping = tf.keras.callbacks.EarlyStopping(
+    monitor='val_loss',
+    patience=5,
+    restore_best_weights=True,
+    verbose=1
+)
+
+model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    os.path.join(MODEL_DIR, "best_model.keras"),
+    monitor='val_accuracy',
+    save_best_only=True,
+    verbose=1
+)
+
+# Train the model
+history = model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=20,
+    batch_size=128,
+    callbacks=[early_stopping, model_checkpoint],
+    verbose=1
+)
+
+# Plot training history
+plt.figure(figsize=(12, 4))
+
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Val Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.title('Model Accuracy')
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.title('Model Loss')
+
+plt.tight_layout()
+plt.show()
+
+# Evaluate on validation set
+val_loss, val_accuracy = model.evaluate(X_val, y_val, verbose=0)
+print(f"\nValidation Loss: {val_loss:.4f}")
+print(f"Validation Accuracy: {val_accuracy:.4f}")
+
+# Save the trained model
 keras_path = os.path.join(MODEL_DIR, "quickdraw_house_cat_dog_car.keras")
 h5_path    = os.path.join(MODEL_DIR, "quickdraw_house_cat_dog_car.h5")
 
