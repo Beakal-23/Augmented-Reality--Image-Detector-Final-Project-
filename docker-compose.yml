@@ -20,6 +20,7 @@ services:
       - "8001:8000"
     volumes:
       - ./saved_models:/app/saved_models
+      - ./api_logs:/app/api_logs  # Mount logs directory for easy access
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
