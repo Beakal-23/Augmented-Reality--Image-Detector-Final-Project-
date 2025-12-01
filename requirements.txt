@@ -25,3 +25,6 @@ onnxruntime>=1.16.3
 pytest>=7.4.3
 httpx>=0.25.2
 requests>=2.32.2
+
+# Hugging Face integration
+huggingface-hub>=0.20.0
